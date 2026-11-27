@@ -1,0 +1,14 @@
+{
+  "modules": [
+    {
+      "id": "pendulo",
+      "name": "Péndulo amortiguado",
+      "entry": "modules/pendulo/index.html"
+    },
+    {
+      "id": "fibra-optica",
+      "name": "Fibra óptica",
+      "entry": "modules/fibra-optica/index.html"
+    }
+  ]
+}

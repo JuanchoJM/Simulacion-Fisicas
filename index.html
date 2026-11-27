@@ -1,338 +1,126 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulación de Péndulo - By Juan Jimenez</title>
-    <!-- Tailwind CSS para diseño moderno -->
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <!-- Chart.js para las gráficas en tiempo real -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laboratorio de Física | Juan Jimenez</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<style>
+html,body{min-height:100%;} #moduleFrame{width:100%;height:calc(100vh - 170px);min-height:700px;border:0;background:#020617}
+.nav-active{background:#0891b2!important;color:white!important;border-color:#06b6d4!important}
+</style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between p-4 md:p-6 font-sans">
+<body class="bg-slate-950 text-slate-100 min-h-screen p-4 md:p-6 font-sans">
+<header class="max-w-7xl mx-auto text-center border-b border-slate-800 pb-4">
+<h1 class="text-3xl md:text-4xl font-extrabold text-cyan-400">Laboratorio de Física</h1>
+<p class="text-sm text-slate-400 mt-1">Simulaciones interactivas · By Juan Jimenez</p>
+<div id="moduleNav" class="flex flex-wrap items-center justify-center gap-2 mt-4"></div>
+<div class="flex flex-wrap items-center justify-center gap-2 mt-3">
+<button id="musicBtn" class="rounded-xl border border-violet-700 bg-violet-950/50 px-4 py-2 text-sm font-semibold text-violet-200" onclick="toggleMusic()">♫ Activar música</button>
+<label class="text-xs text-slate-400 flex items-center gap-2">Volumen
+<input id="musicVolume" type="range" min="0" max="100" value="45" class="accent-violet-400 w-24" oninput="setMusicVolume(this.value)">
+</label>
+</div>
+<p class="mt-2 text-xs text-slate-500">La música ambiental comienza únicamente cuando la activas y puedes silenciarla en cualquier momento.</p>
+</header>
+<main class="max-w-7xl mx-auto mt-4 overflow-hidden rounded-2xl border border-slate-800">
+<iframe id="moduleFrame" title="Simulación seleccionada" src="modules/pendulo/index.html"></iframe>
+</main>
+<footer class="max-w-7xl mx-auto text-center mt-4 text-xs text-slate-600">Puedes añadir módulos independientes sin modificar el código de las simulaciones existentes.</footer>
+<script src="modules.js"></script>
+<script>
+let currentModule = null;
+function renderModuleNav(){
+  const nav=document.getElementById('moduleNav');
+  nav.innerHTML='';
+  LAB_MODULES.forEach((mod,index)=>{
+    const btn=document.createElement('button');
+    btn.textContent=mod.name;
+    btn.className='rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-300 hover:bg-slate-800';
+    btn.dataset.module=mod.id;
+    btn.onclick=()=>loadModule(mod.id);
+    nav.appendChild(btn);
+  });
+}
+function loadModule(id){
+  const mod=LAB_MODULES.find(m=>m.id===id);
+  if(!mod)return;
+  currentModule=id;
+  document.getElementById('moduleFrame').src=mod.entry;
+  document.querySelectorAll('#moduleNav button').forEach(btn=>{
+    const active=btn.dataset.module===id;
+    btn.classList.toggle('nav-active',active);
+    btn.classList.toggle('text-slate-300',!active);
+  });
+}
+renderModuleNav();
+loadModule(LAB_MODULES[0].id);
 
-    <!-- Encabezado -->
-    <header class="w-full max-w-7xl mx-auto text-center mb-6 border-b border-slate-800 pb-4">
-        <h1 class="text-3xl md:text-4xl font-extrabold text-cyan-400 tracking-tight">Simulación de Péndulo Amortiguado y Forzado</h1>
-        <p class="text-sm md:text-base text-slate-400 mt-1">Exploración de resonancia y plano fase &bull; Creado <span class="text-cyan-300 font-semibold">By Juan Jimenez</span></p>
-    </header>
-
-    <!-- Contenido Principal -->
-    <main class="w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
-        
-        <!-- Panel de Animación y Controles (Izquierda) -->
-        <section class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col items-center shadow-xl">
-            <h2 class="text-lg font-bold text-slate-200 mb-3 self-start">Visualización Física</h2>
-            
-            <!-- Canvas del Péndulo -->
-            <div class="relative bg-slate-950 rounded-xl overflow-hidden border border-slate-800 shadow-inner w-full flex justify-center">
-                <canvas id="pendulumCanvas" width="380" height="340" class="block"></canvas>
-            </div>
-
-            <!-- Botones de Casos Predefinidos -->
-            <div class="w-full mt-4 grid grid-cols-3 gap-2">
-                <button onclick="setCase(1)" id="btn1" class="px-2 py-2 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 transition">1. Libre</button>
-                <button onclick="setCase(2)" id="btn2" class="px-2 py-2 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700 transition">2. Fuera Resonancia</button>
-                <button onclick="setCase(3)" id="btn3" class="px-2 py-2 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-rose-300 border border-slate-700 transition">3. Resonancia</button>
-            </div>
-
-            <!-- Controles Deslizantes -->
-            <div class="w-full mt-5 space-y-3 text-sm">
-                <div>
-                    <div class="flex justify-between text-slate-400 text-xs mb-1">
-                        <span>Fricción ($\gamma$):</span>
-                        <span id="valGamma" class="font-mono text-cyan-300">0.25</span>
-                    </div>
-                    <input type="range" id="gammaRange" min="0" max="1" step="0.01" value="0.25" class="w-full accent-cyan-400 cursor-pointer">
-                </div>
-                <div>
-                    <div class="flex justify-between text-slate-400 text-xs mb-1">
-                        <span>Fuerza Externa ($F_0$):</span>
-                        <span id="valF0" class="font-mono text-cyan-300">0.80</span>
-                    </div>
-                    <input type="range" id="f0Range" min="0" max="2" step="0.05" value="0.80" class="w-full accent-cyan-400 cursor-pointer">
-                </div>
-                <div>
-                    <div class="flex justify-between text-slate-400 text-xs mb-1">
-                        <span>Frecuencia Externa ($\omega$):</span>
-                        <span id="valW" class="font-mono text-cyan-300">3.13</span>
-                    </div>
-                    <input type="range" id="wRange" min="0" max="6" step="0.05" value="3.13" class="w-full accent-cyan-400 cursor-pointer">
-                </div>
-            </div>
-
-            <div class="flex gap-3 w-full mt-5">
-                <button onclick="toggleSimulation()" id="playBtn" class="flex-1 py-2.5 bg-cyan-600 hover:bg-cyan-500 font-bold rounded-xl text-white shadow transition">Pausar</button>
-                <button onclick="resetSimulation()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 font-semibold rounded-xl text-slate-300 border border-slate-700 transition">Reiniciar</button>
-            </div>
-        </section>
-
-        <!-- Panel de Gráficas (Derecha) -->
-        <section class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between shadow-xl">
-            <h2 class="text-lg font-bold text-slate-200 mb-3">Dinámica y Espacio de Fase</h2>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
-                <!-- Gráfica Posición Temporal -->
-                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex flex-col items-center justify-center">
-                    <span class="text-xs text-slate-400 mb-1 font-semibold">Posición $\theta(t)$ vs Tiempo</span>
-                    <div class="w-full h-56 relative">
-                        <canvas id="timeChart"></canvas>
-                    </div>
-                </div>
-                <!-- Gráfica Plano Fase -->
-                <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex flex-col items-center justify-center">
-                    <span class="text-xs text-slate-400 mb-1 font-semibold">Plano Fase $(\theta, \dot{\theta})$</span>
-                    <div class="w-full h-56 relative">
-                        <canvas id="phaseChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <div class="mt-4 p-3 bg-slate-950/50 rounded-xl border border-slate-800/80 text-xs text-slate-400">
-                <p><strong class="text-slate-200">Nota técnica:</strong> Resuelve el sistema no lineal mediante Runge-Kutta de orden 4 (RK4). La resonancia máxima ocurre cuando la frecuencia externa $\omega$ iguala la frecuencia natural $\omega_0 = \sqrt{g/L} \approx 3.13$ rad/s.</p>
-            </div>
-        </section>
-
-    </main>
-
-    <!-- Footer -->
-    <footer class="w-full max-w-7xl mx-auto text-center mt-6 py-4 border-t border-slate-800 text-xs text-slate-500">
-        Desarrollado con física computacional &bull; <span class="text-cyan-400 font-medium">By Juan Jimenez</span>
-    </footer>
-
-    <!-- Script de Simulación y Física -->
-    <script>
-        // Parámetros físicos
-        const g = 9.81;
-        const L = 1.0;
-        const w0 = Math.sqrt(g / L);
-
-        let theta = 0.2;
-        let omega_v = 0.0;
-        let t = 0.0;
-        let gamma = 0.25;
-        let F0 = 0.8;
-        let w_ext = w0;
-        let isRunning = true;
-
-        const dt = 0.02; // Paso de tiempo para la simulación
-
-        // Historiales para las gráficas
-        const maxHistory = 150;
-        let timeHistory = [];
-        let thetaHistory = [];
-        let phaseTheta = [];
-        let phaseOmega = [];
-
-        // Referencias DOM
-        const canvas = document.getElementById("pendulumCanvas");
-        const ctx = canvas.getContext("2d");
-        const gammaRange = document.getElementById("gammaRange");
-        const f0Range = document.getElementById("f0Range");
-        const wRange = document.getElementById("wRange");
-        const valGamma = document.getElementById("valGamma");
-        const valF0 = document.getElementById("valF0");
-        const valW = document.getElementById("valW");
-
-        // Configuración de Gráficas Chart.js
-        const timeCtx = document.getElementById("timeChart").getContext("2d");
-        const timeChart = new Chart(timeCtx, {
-            type: 'line',
-            data: {
-                labels: timeHistory,
-                datasets: [{
-                    label: 'θ (rad)',
-                    data: thetaHistory,
-                    borderColor: '#38bdf8',
-                    borderWidth: 2,
-                    pointRadius: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: '#1e293b' } },
-                    y: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: '#1e293b' } }
-                },
-                plugins: { legend: { display: false } }
-            }
-        });
-
-        const phaseCtx = document.getElementById("phaseChart").getContext("2d");
-        const phaseChart = new Chart(phaseCtx, {
-            type: 'line',
-            data: {
-                datasets: [{
-                    label: 'Plano Fase',
-                    data: [],
-                    borderColor: '#f43f5e',
-                    borderWidth: 1.5,
-                    pointRadius: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: { title: { display: true, text: 'θ', color: '#94a3b8', font: { size: 10 } }, ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: '#1e293b' } },
-                    y: { title: { display: true, text: 'ω', color: '#94a3b8', font: { size: 10 } }, ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: '#1e293b' } }
-                },
-                plugins: { legend: { display: false } }
-            }
-        });
-
-        // Ecuaciones diferenciales (derivadas)
-        function derivatives(th, om, time) {
-            let dth = om;
-            let dom = -gamma * om - (w0**2) * Math.sin(th) + F0 * Math.cos(w_ext * time);
-            return [dth, dom];
-        }
-
-        // Método Runge-Kutta de Orden 4 (RK4)
-        function rk4Step(th, om, time, step) {
-            let [k1_th, k1_om] = derivatives(th, om, time);
-            let [k2_th, k2_om] = derivatives(th + 0.5*step*k1_th, om + 0.5*step*k1_om, time + 0.5*step);
-            let [k3_th, k3_om] = derivatives(th + 0.5*step*k2_th, om + 0.5*step*k2_om, time + 0.5*step);
-            let [k4_th, k4_om] = derivatives(th + step*k3_th, om + step*k3_om, time + step);
-
-            let next_th = th + (step / 6) * (k1_th + 2*k2_th + 2*k3_th + k4_th);
-            let next_om = om + (step / 6) * (k1_om + 2*k2_om + 2*k3_om + k4_om);
-            return [next_th, next_om];
-        }
-
-        // Actualizar parámetros desde los sliders
-        gammaRange.oninput = () => { gamma = parseFloat(gammaRange.value); valGamma.innerText = gamma.toFixed(2); };
-        f0Range.oninput = () => { F0 = parseFloat(f0Range.value); valF0.innerText = F0.toFixed(2); };
-        wRange.oninput = () => { w_ext = parseFloat(wRange.value); valW.innerText = w_ext.toFixed(2); };
-
-        function setCase(caso) {
-            if (caso === 1) { // Sin fuerza
-                gamma = 0.25; F0 = 0.0; w_ext = 0.0;
-            } else if (caso === 2) { // Fuera de resonancia
-                gamma = 0.25; F0 = 0.8; w_ext = 1.2;
-            } else if (caso === 3) { // Resonancia
-                gamma = 0.2; F0 = 0.6; w_ext = w0;
-            }
-            gammaRange.value = gamma; valGamma.innerText = gamma.toFixed(2);
-            f0Range.value = F0; valF0.innerText = F0.toFixed(2);
-            wRange.value = w_ext; valW.innerText = w_ext.toFixed(2);
-            resetSimulation();
-        }
-
-        function resetSimulation() {
-            theta = 0.2;
-            omega_v = 0.0;
-            t = 0.0;
-            timeHistory = [];
-            thetaHistory = [];
-            phaseTheta = [];
-            phaseOmega = [];
-        }
-
-        function toggleSimulation() {
-            isRunning = !isRunning;
-            document.getElementById("playBtn").innerText = isRunning ? "Pausar" : "Reanudar";
-            document.getElementById("playBtn").className = isRunning ? 
-                "flex-1 py-2.5 bg-cyan-600 hover:bg-cyan-500 font-bold rounded-xl text-white shadow transition" : 
-                "flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 font-bold rounded-xl text-white shadow transition";
-        }
-
-        // Bucle principal de animación
-        function update() {
-            if (isRunning) {
-                // Subpasos para mayor precisión numérica
-                for (let i = 0; i < 3; i++) {
-                    let [nt, no] = rk4Step(theta, omega_v, t, dt / 3);
-                    theta = nt;
-                    omega_v = no;
-                    t += dt / 3;
-                }
-
-                // Guardar datos para gráficas
-                timeHistory.push(t.toFixed(1));
-                thetaHistory.push(theta);
-                phaseTheta.push(theta);
-                phaseOmega.push(omega_v);
-
-                if (timeHistory.length > maxHistory) {
-                    timeHistory.shift();
-                    thetaHistory.shift();
-                }
-                if (phaseTheta.length > 250) {
-                    phaseTheta.shift();
-                    phaseOmega.shift();
-                }
-
-                timeChart.data.labels = timeHistory;
-                timeChart.data.datasets[0].data = thetaHistory;
-                timeChart.update('none');
-
-                phaseChart.data.datasets[0].data = phaseTheta.map((th, idx) => ({ x: th, y: phaseOmega[idx] }));
-                phaseChart.update('none');
-            }
-
-            drawPendulum();
-            requestAnimationFrame(update);
-        }
-
-        // Renderizado del Canvas del Péndulo
-        function drawPendulum() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            const cx = canvas.width / 2;
-            const cy = 70;
-            const lengthPx = 170;
-
-            const x = cx + lengthPx * Math.sin(theta);
-            const y = cy + lengthPx * Math.cos(theta);
-
-            // Pivote superior
-            ctx.fillStyle = '#64748b';
-            ctx.beginPath();
-            ctx.arc(cx, cy, 6, 0, 2 * Math.PI);
-            ctx.fill();
-
-            // Varilla del péndulo
-            ctx.strokeStyle = '#38bdf8';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.moveTo(cx, cy);
-            ctx.lineTo(x, y);
-            ctx.stroke();
-
-            // Vector de fuerza externa indicador (si aplica)
-            if (F0 > 0) {
-                let forceLen = F0 * 25;
-                let forceX = x + forceLen * Math.cos(w_ext * t);
-                ctx.strokeStyle = 'rgba(244, 63, 94, 0.7)';
-                ctx.lineWidth = 2;
-                ctx.setLineDash([3, 3]);
-                ctx.beginPath();
-                ctx.moveTo(x, y);
-                ctx.lineTo(forceX, y);
-                ctx.stroke();
-                ctx.setLineDash([]);
-            }
-
-            // Esfera del péndulo (masa)
-            ctx.fillStyle = '#06b6d4';
-            ctx.beginPath();
-            ctx.arc(x, y, 18, 0, 2 * Math.PI);
-            ctx.fill();
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            // Información en pantalla
-            ctx.fillStyle = '#94a3b8';
-            ctx.font = '11px sans-serif';
-            ctx.fillText(`t = ${t.toFixed(1)} s`, 15, 25);
-            ctx.fillText(`θ = ${(theta * 180 / Math.PI).toFixed(1)}°`, 15, 42);
-        }
-
-        // Iniciar animación
-        requestAnimationFrame(update);
-    </script>
-</body>
-</html>
+// Audio ambiental original, sintetizado localmente. Requiere activación explícita.
+let audioCtx=null, masterGain=null, oscillators=[], audioOn=false;
+async function toggleMusic(){
+  const btn=document.getElementById('musicBtn');
+  if(audioOn){
+    if(masterGain && audioCtx){
+      masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
+      masterGain.gain.setTargetAtTime(0,audioCtx.currentTime,0.18);
+    }
+    audioOn=false;
+    btn.textContent='♫ Activar música';
+    setTimeout(()=>{
+      if(!audioOn && audioCtx){
+        oscillators.forEach(o=>{try{o.stop()}catch(e){}});
+        oscillators=[];
+        audioCtx.close();
+        audioCtx=null;
+        masterGain=null;
+      }
+    },900);
+    return;
+  }
+  const AC=window.AudioContext||window.webkitAudioContext;
+  if(!AC){btn.textContent='Audio no compatible';return;}
+  try{
+    if(!audioCtx || audioCtx.state==='closed'){
+      audioCtx=new AC();
+      masterGain=audioCtx.createGain();
+      masterGain.gain.value=0;
+      masterGain.connect(audioCtx.destination);
+      const notes=[110,164.81,220,261.63,329.63];
+      notes.forEach((freq,i)=>{
+        const osc=audioCtx.createOscillator();
+        const gain=audioCtx.createGain();
+        const filter=audioCtx.createBiquadFilter();
+        osc.type='sine';
+        osc.frequency.value=freq;
+        gain.gain.value=[0.22,0.13,0.10,0.08,0.045][i];
+        filter.type='lowpass';
+        filter.frequency.value=900;
+        osc.connect(filter); filter.connect(gain); gain.connect(masterGain);
+        osc.start(); oscillators.push(osc);
+      });
+      // Modulación lenta y suave para que el fondo no sea un tono totalmente fijo.
+      const lfo=audioCtx.createOscillator();
+      const lfoGain=audioCtx.createGain();
+      lfo.frequency.value=0.12;
+      lfoGain.gain.value=0.018;
+      lfo.connect(lfoGain); lfoGain.connect(masterGain.gain);
+      lfo.start(); oscillators.push(lfo);
+    }
+    await audioCtx.resume();
+    const volume=Number(document.getElementById('musicVolume').value)/100;
+    masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
+    masterGain.gain.setTargetAtTime(0.22*volume,audioCtx.currentTime,0.45);
+    audioOn=true;
+    btn.textContent='♫ Silenciar música';
+  }catch(err){
+    btn.textContent='No se pudo iniciar el audio';
+    console.error('Audio:',err);
+  }
+}
+function setMusicVolume(value){
+  if(audioOn && masterGain && audioCtx){
+    masterGain.gain.setTargetAtTime(0.22*(Number(value)/100),audioCtx.currentTime,0.08);
+  }
+}
+</script>
+</body></html>
