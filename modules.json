@@ -9,6 +9,11 @@
       "id": "fibra-optica",
       "name": "Fibra óptica",
       "entry": "modules/fibra-optica/index.html"
+    },
+    {
+      "id": "poynting",
+      "name": "Ondas electromagnéticas y Poynting",
+      "entry": "modules/poynting/index.html"
     }
   ]
 }
