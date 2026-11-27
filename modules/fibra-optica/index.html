@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Módulo | Fibra óptica</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen p-4 md:p-6 font-sans">
+<header class="w-full max-w-7xl mx-auto text-center mb-6 border-b border-slate-800 pb-4">
+<a href="../../index.html" class="inline-block mb-3 text-xs text-cyan-300 hover:text-cyan-200">← Volver al laboratorio</a>
+<h1 class="text-3xl md:text-4xl font-extrabold text-cyan-400">Simulación de fibra óptica</h1>
+<p class="text-sm text-slate-400 mt-1">Aceptación, refracción, reflexión interna total y condición monomodo</p>
+</header>
+<main class="w-full max-w-7xl mx-auto flex-grow">
+        <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+            <!-- Visualización -->
+            <section class="xl:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-100">Propagación de la luz en una fibra óptica</h2>
+                        <p class="text-sm text-slate-400 mt-1">Tres medios, dos interfaces y cuatro ángulos</p>
+                    </div>
+                    <span id="fiberStatus" class="text-xs font-bold px-3 py-1.5 rounded-full bg-emerald-900/50 text-emerald-300 border border-emerald-700">Reflexión interna total</span>
+                </div>
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-2">
+                    <svg id="fiberSvg" viewBox="0 0 720 410" class="w-full h-auto" role="img" aria-label="Diagrama interactivo de los rayos y ángulos en una fibra óptica">
+                        <defs>
+                            <marker id="fiberRayArrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6" fill="#34d399"/></marker>
+                            <marker id="fiberNormalArrow" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6" fill="#fbbf24"/></marker>
+                        </defs>
+                        <rect x="190" y="65" width="500" height="230" rx="5" fill="#2563eb" opacity=".10"/>
+                        <rect x="190" y="65" width="500" height="230" rx="5" fill="none" stroke="#60a5fa" stroke-width="2"/>
+                        <text x="215" y="91" fill="#bfdbfe" font-size="17" font-weight="600">Núcleo · n₂</text>
+                        <text x="490" y="325" fill="#94a3b8" font-size="15">Revestimiento · n₃</text>
+                        <text x="22" y="105" fill="#cbd5e1" font-size="16">Aire · n₁</text>
+                        <line x1="190" y1="35" x2="190" y2="345" stroke="#fbbf24" stroke-width="2" stroke-dasharray="8 6"/>
+                        <text x="105" y="27" fill="#fbbf24" font-size="13">Normal de entrada</text>
+                        <line x1="190" y1="180" x2="350" y2="180" stroke="#fbbf24" stroke-width="2" stroke-dasharray="7 6"/>
+                        <line x1="450" y1="295" x2="450" y2="385" stroke="#fbbf24" stroke-width="2" stroke-dasharray="7 6"/>
+                        <text x="465" y="382" fill="#fbbf24" font-size="13">Normal de la interfaz</text>
+                        <path id="incidentRay" d="" stroke="#34d399" stroke-width="4" fill="none" marker-end="url(#fiberRayArrow)"/>
+                        <path id="insideRay" d="" stroke="#34d399" stroke-width="4" fill="none" marker-end="url(#fiberRayArrow)"/>
+                        <path id="reflectedRay" d="" stroke="#22d3ee" stroke-width="3.5" fill="none" marker-end="url(#fiberRayArrow)"/>
+                        <path id="transmittedRay" d="" stroke="#f472b6" stroke-width="3.5" fill="none" marker-end="url(#fiberRayArrow)"/>
+                        <path id="angle1Arc" d="" stroke="#fbbf24" stroke-width="3" fill="none"/>
+                        <path id="angle2Arc" d="" stroke="#60a5fa" stroke-width="3" fill="none"/>
+                        <path id="angle3Arc" d="" stroke="#fbbf24" stroke-width="3" fill="none"/>
+                        <path id="angle4Arc" d="" stroke="#f472b6" stroke-width="3" fill="none"/>
+                        <g fill="#e2e8f0" font-size="16" font-weight="700">
+                            <text id="theta1Label" x="130" y="160">θ₁</text>
+                            <text id="theta2Label" x="225" y="165">θ₂</text>
+                            <text id="theta3Label" x="465" y="260">θ₃</text>
+                            <text id="theta4Label" x="490" y="350">θ₄</text>
+                        </g>
+                        <circle cx="190" cy="180" r="5" fill="#f8fafc"/>
+                        <circle id="hitPoint" cx="450" cy="295" r="5" fill="#f8fafc"/>
+                        <text x="20" y="395" fill="#64748b" font-size="12">Esquema conceptual; la geometría se adapta a los parámetros seleccionados.</text>
+                    </svg>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
+                    <div class="rounded-lg bg-slate-950 border border-slate-800 p-3"><p class="text-xs text-slate-400">θ₁ · Incidencia</p><p id="outTheta1" class="text-xl font-bold text-amber-300">7.23°</p></div>
+                    <div class="rounded-lg bg-slate-950 border border-slate-800 p-3"><p class="text-xs text-slate-400">θ₂ · Refracción</p><p id="outTheta2" class="text-xl font-bold text-blue-300">4.92°</p></div>
+                    <div class="rounded-lg bg-slate-950 border border-slate-800 p-3"><p class="text-xs text-slate-400">θ₃ · Incidencia interna</p><p id="outTheta3" class="text-xl font-bold text-amber-300">85.08°</p></div>
+                    <div class="rounded-lg bg-slate-950 border border-slate-800 p-3"><p class="text-xs text-slate-400">θ₄ · Transmisión</p><p id="outTheta4" class="text-xl font-bold text-pink-300">90.00°</p></div>
+                </div>
+            </section>
+
+            <!-- Controles -->
+            <section class="xl:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                <h2 class="text-lg font-bold text-slate-100 mb-1">Parámetros de la simulación</h2>
+                <p class="text-xs text-slate-400 mb-4">Mueve los controles y observa cómo cambia la trayectoria de la luz.</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+                    <button onclick="setFiberCase('limit')" class="rounded-lg bg-amber-900/40 border border-amber-700 text-amber-200 py-2 px-2 text-xs font-semibold hover:bg-amber-900/70">1. Ángulo límite</button>
+                    <button onclick="setFiberCase('guided')" class="rounded-lg bg-emerald-900/40 border border-emerald-700 text-emerald-200 py-2 px-2 text-xs font-semibold hover:bg-emerald-900/70">2. Guiado (RTI)</button>
+                    <button onclick="setFiberCase('escape')" class="rounded-lg bg-rose-900/40 border border-rose-700 text-rose-200 py-2 px-2 text-xs font-semibold hover:bg-rose-900/70">3. Fuera de aceptación</button>
+                    <button onclick="setFiberCase('custom')" class="rounded-lg bg-slate-800 border border-slate-700 text-slate-200 py-2 px-2 text-xs font-semibold hover:bg-slate-700">4. Personalizado</button>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between text-xs mb-1"><label for="n1Range" class="text-slate-300">Índice del medio exterior (n₁)</label><span id="n1Value" class="font-mono text-cyan-300">1.0000</span></div>
+                        <input id="n1Range" type="range" min="1" max="1.5" step="0.001" value="1" class="w-full accent-cyan-400">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-1"><label for="n2Range" class="text-slate-300">Índice del núcleo (n₂)</label><span id="n2Value" class="font-mono text-cyan-300">1.4682</span></div>
+                        <input id="n2Range" type="range" min="1.40" max="1.60" step="0.0001" value="1.4682" class="w-full accent-cyan-400">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-1"><label for="n3Range" class="text-slate-300">Índice del revestimiento (n₃)</label><span id="n3Value" class="font-mono text-cyan-300">1.4628</span></div>
+                        <input id="n3Range" type="range" min="1.35" max="1.59" step="0.0001" value="1.4628" class="w-full accent-cyan-400">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-1"><label for="angleRange" class="text-slate-300">Ángulo de incidencia θ₁</label><span id="angleValue" class="font-mono text-cyan-300">7.23°</span></div>
+                        <input id="angleRange" type="range" min="0" max="25" step="0.01" value="7.23" class="w-full accent-cyan-400">
+                    </div>
+                    <div class="border-t border-slate-800 pt-3">
+                        <p class="text-xs font-semibold text-slate-300 mb-2">Parámetros para el régimen monomodo</p>
+                        <div class="flex justify-between text-xs mb-1"><label for="coreRange" class="text-slate-300">Radio del núcleo (a)</label><span id="coreValue" class="font-mono text-cyan-300">4.1 µm</span></div>
+                        <input id="coreRange" type="range" min="2" max="8" step="0.1" value="4.1" class="w-full accent-cyan-400">
+                        <div class="flex justify-between text-xs mt-3 mb-1"><label for="waveRange" class="text-slate-300">Longitud de onda (λ)</label><span id="waveValue" class="font-mono text-cyan-300">1.55 µm</span></div>
+                        <input id="waveRange" type="range" min="0.8" max="2" step="0.01" value="1.55" class="w-full accent-cyan-400">
+                    </div>
+                </div>
+                <div class="flex gap-2 mt-5">
+                    <button onclick="updateFiber()" class="flex-1 rounded-xl bg-cyan-600 hover:bg-cyan-500 py-2.5 font-bold text-white">Actualizar</button>
+                    <button onclick="resetFiber()" class="rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2.5 font-semibold text-slate-200">Restablecer</button>
+                </div>
+            </section>
+        </div>
+
+        <!-- Resultados y explicación -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+                <h3 class="font-bold text-slate-100 mb-3">Resultados físicos</h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-slate-950 rounded-lg p-3"><p class="text-xs text-slate-400">Apertura numérica (NA)</p><p id="outNA" class="text-xl font-bold text-cyan-300">0.1258</p></div>
+                    <div class="bg-slate-950 rounded-lg p-3"><p class="text-xs text-slate-400">Ángulo de aceptación</p><p id="outAcceptance" class="text-xl font-bold text-cyan-300">7.23°</p></div>
+                    <div class="bg-slate-950 rounded-lg p-3"><p class="text-xs text-slate-400">Ángulo crítico</p><p id="outCritical" class="text-xl font-bold text-cyan-300">85.08°</p></div>
+                    <div class="bg-slate-950 rounded-lg p-3"><p class="text-xs text-slate-400">Parámetro normalizado V</p><p id="outV" class="text-xl font-bold text-cyan-300">2.08</p></div>
+                </div>
+                <div id="fiberExplanation" class="mt-3 rounded-lg bg-slate-950 border border-slate-800 p-3 text-sm text-slate-300 leading-relaxed">
+                    La luz llega al revestimiento con un ángulo igual o superior al crítico: se cumple la condición de reflexión interna total.
+                </div>
+                <p id="modeStatus" class="mt-3 text-sm font-semibold text-emerald-300">V &lt; 2.405: condición monomodo.</p>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+                <h3 class="font-bold text-slate-100 mb-3">Procedimiento: ley de Snell</h3>
+                <div class="space-y-2 text-sm text-slate-300">
+                    <p class="font-semibold text-cyan-300">1. Entrada: medio 1 → núcleo</p>
+                    <p id="eqSnell1" class="font-mono bg-slate-950 rounded-lg p-2">n₁ sen(θ₁) = n₂ sen(θ₂)</p>
+                    <p class="font-semibold text-cyan-300 mt-3">2. Geometría de las normales</p>
+                    <p id="eqGeometry" class="font-mono bg-slate-950 rounded-lg p-2">θ₃ = 90° − θ₂</p>
+                    <p class="font-semibold text-cyan-300 mt-3">3. Interfaz: núcleo → revestimiento</p>
+                    <p id="eqSnell2" class="font-mono bg-slate-950 rounded-lg p-2">n₂ sen(θ₃) = n₃ sen(θ₄)</p>
+                    <p class="text-xs text-slate-400 mt-3">En el caso límite, θ₄ = 90°. Si se supera el ángulo crítico de incidencia interna, ya no existe un rayo transmitido propagante y ocurre reflexión interna total.</p>
+                </div>
+            </div>
+        </section>
+        <p class="text-xs text-slate-500 text-center mt-5">Modelo geométrico de rayos para estudiar la aceptación y el confinamiento. El criterio monomodo se evalúa aparte mediante V = (2πa/λ)·NA.</p>
+    </main>
+<footer class="w-full max-w-7xl mx-auto text-center mt-6 py-4 border-t border-slate-800 text-xs text-slate-500">Desarrollado con física computacional · By Juan Jimenez</footer>
+<script>
+// Módulo de fibra óptica. Todos los ángulos se calculan en grados.
+        const fiberDefaults = { n1: 1.000, n2: 1.4682, n3: 1.4628, angle: 7.23, core: 4.1, wave: 1.55 };
+        const fiberIds = ['n1Range', 'n2Range', 'n3Range', 'angleRange', 'coreRange', 'waveRange'];
+        const rad = deg => deg * Math.PI / 180;
+        const deg = value => value * 180 / Math.PI;
+        const clamp = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
+        const fmt = (x, digits=2) => Number.isFinite(x) ? x.toFixed(digits) + '°' : '—';
+
+        function fiberValues() {
+            return {
+                n1: Number(document.getElementById('n1Range').value),
+                n2: Number(document.getElementById('n2Range').value),
+                n3: Number(document.getElementById('n3Range').value),
+                angle: Number(document.getElementById('angleRange').value),
+                core: Number(document.getElementById('coreRange').value),
+                wave: Number(document.getElementById('waveRange').value)
+            };
+        }
+
+        function setFiberCase(which) {
+            const v = {...fiberDefaults};
+            if (which === 'guided') v.angle = 4.00;
+            if (which === 'limit') v.angle = 7.23;
+            if (which === 'escape') v.angle = 12.00;
+            if (which === 'custom') {
+                document.getElementById('angleRange').value = 5.00;
+                updateFiber();
+                return;
+            }
+            Object.entries(v).forEach(([key, value]) => {
+                const map = {n1:'n1Range', n2:'n2Range', n3:'n3Range', angle:'angleRange', core:'coreRange', wave:'waveRange'};
+                document.getElementById(map[key]).value = value;
+            });
+            updateFiber();
+        }
+
+        function resetFiber() {
+            Object.entries(fiberDefaults).forEach(([key, value]) => {
+                const map = {n1:'n1Range', n2:'n2Range', n3:'n3Range', angle:'angleRange', core:'coreRange', wave:'waveRange'};
+                document.getElementById(map[key]).value = value;
+            });
+            updateFiber();
+        }
+
+        function setSvgPath(id, d) { document.getElementById(id).setAttribute('d', d); }
+        function arcPath(cx, cy, radius, startDeg, endDeg) {
+            const p1 = [cx + radius*Math.cos(rad(startDeg)), cy + radius*Math.sin(rad(startDeg))];
+            const p2 = [cx + radius*Math.cos(rad(endDeg)), cy + radius*Math.sin(rad(endDeg))];
+            const delta = Math.abs(endDeg-startDeg);
+            const large = delta > 180 ? 1 : 0;
+            const sweep = endDeg >= startDeg ? 1 : 0;
+            return `M ${p1[0]} ${p1[1]} A ${radius} ${radius} 0 ${large} ${sweep} ${p2[0]} ${p2[1]}`;
+        }
+
+        function updateFiber() {
+            const v = fiberValues();
+            const {n1,n2,n3,angle,core,wave} = v;
+            ['n1','n2','n3'].forEach(k => document.getElementById(k+'Value').textContent = v[k].toFixed(4));
+            document.getElementById('angleValue').textContent = angle.toFixed(2)+'°';
+            document.getElementById('coreValue').textContent = core.toFixed(1)+' µm';
+            document.getElementById('waveValue').textContent = wave.toFixed(2)+' µm';
+
+            const valid = n2 > n3 && n2 > n1 && n3 > 0 && n1 > 0;
+            if (!valid) {
+                document.getElementById('fiberStatus').textContent = 'Índices no válidos';
+                document.getElementById('fiberStatus').className = 'text-xs font-bold px-3 py-1.5 rounded-full bg-rose-900/50 text-rose-300 border border-rose-700';
+                document.getElementById('fiberExplanation').textContent = 'Para este modelo se requiere n₂ > n₃ y n₂ > n₁. Ajusta los índices para que el núcleo tenga mayor índice que el revestimiento.';
+                return;
+            }
+
+            const na = Math.sqrt(n2*n2 - n3*n3);
+            const ratio = na/n1;
+            const acceptance = ratio <= 1 ? deg(Math.asin(ratio)) : 90;
+            const theta2arg = n1*Math.sin(rad(angle))/n2;
+            const theta2 = Math.asin(clamp(theta2arg, -1, 1));
+            const theta2deg = deg(theta2);
+            const theta3 = 90 - theta2deg;
+            const critical = deg(Math.asin(n3/n2));
+            const isTIR = theta3 > critical + 0.0001;
+            const isLimit = Math.abs(theta3-critical) <= 0.03;
+            const transArg = n2*Math.sin(rad(theta3))/n3;
+            const hasTransmission = transArg <= 1 + 1e-10;
+            const theta4 = hasTransmission ? deg(Math.asin(clamp(transArg, -1, 1))) : null;
+            const vNumber = (2*Math.PI*core/wave)*na;
+            const guided = angle <= acceptance + 1e-8;
+
+            document.getElementById('outTheta1').textContent = fmt(angle);
+            document.getElementById('outTheta2').textContent = fmt(theta2deg);
+            document.getElementById('outTheta3').textContent = fmt(theta3);
+            document.getElementById('outTheta4').textContent = hasTransmission ? fmt(theta4) : 'No hay rayo';
+            document.getElementById('outNA').textContent = na.toFixed(5);
+            document.getElementById('outAcceptance').textContent = fmt(acceptance);
+            document.getElementById('outCritical').textContent = fmt(critical);
+            document.getElementById('outV').textContent = vNumber.toFixed(3);
+
+            const status = document.getElementById('fiberStatus');
+            const explanation = document.getElementById('fiberExplanation');
+            if (isTIR) {
+                status.textContent = 'Reflexión interna total';
+                status.className = 'text-xs font-bold px-3 py-1.5 rounded-full bg-emerald-900/50 text-emerald-300 border border-emerald-700';
+                explanation.textContent = `θ₃ = ${theta3.toFixed(2)}° es mayor que el ángulo crítico ${critical.toFixed(2)}°. No existe rayo transmitido propagante: la luz se refleja dentro del núcleo.`;
+            } else if (isLimit) {
+                status.textContent = 'Condición límite';
+                status.className = 'text-xs font-bold px-3 py-1.5 rounded-full bg-amber-900/50 text-amber-300 border border-amber-700';
+                explanation.textContent = `θ₃ ≈ θc = ${critical.toFixed(2)}°. El rayo transmitido sale con θ₄ ≈ 90°, paralelo a la interfaz. Es el límite de aceptación.`;
+            } else {
+                status.textContent = 'Hay refracción al revestimiento';
+                status.className = 'text-xs font-bold px-3 py-1.5 rounded-full bg-rose-900/50 text-rose-300 border border-rose-700';
+                explanation.textContent = `θ₃ = ${theta3.toFixed(2)}° es menor que el ángulo crítico ${critical.toFixed(2)}°. La luz se refracta hacia el revestimiento; para estos parámetros el rayo queda fuera del cono de aceptación.`;
+            }
+
+            const mode = document.getElementById('modeStatus');
+            if (vNumber < 2.405) {
+                mode.textContent = `V = ${vNumber.toFixed(3)} < 2.405: cumple el criterio aproximado de operación monomodo.`;
+                mode.className = 'mt-3 text-sm font-semibold text-emerald-300';
+            } else {
+                mode.textContent = `V = ${vNumber.toFixed(3)} ≥ 2.405: admite más de un modo espacial.`;
+                mode.className = 'mt-3 text-sm font-semibold text-amber-300';
+            }
+
+            document.getElementById('eqSnell1').textContent = `${n1.toFixed(3)} sen(${angle.toFixed(2)}°) = ${n2.toFixed(4)} sen(${theta2deg.toFixed(2)}°)`;
+            document.getElementById('eqGeometry').textContent = `θ₃ = 90° − ${theta2deg.toFixed(2)}° = ${theta3.toFixed(2)}°`;
+            document.getElementById('eqSnell2').textContent = hasTransmission
+                ? `${n2.toFixed(4)} sen(${theta3.toFixed(2)}°) = ${n3.toFixed(4)} sen(${theta4.toFixed(2)}°)`
+                : `${n2.toFixed(4)} sen(${theta3.toFixed(2)}°) > ${n3.toFixed(4)} · no hay θ₄ real`;
+
+            // Diagrama: la cara de entrada es vertical; la interfaz núcleo-revestimiento es horizontal.
+            const entryX=190, entryY=180, hitX=450, coreBottom=295;
+            const slope=Math.tan(rad(theta2deg));
+            const hitY=clamp(entryY + (hitX-entryX)*slope, 205, coreBottom-3);
+            const actualTheta2 = deg(Math.atan((hitY-entryY)/(hitX-entryX)));
+            const actualTheta3 = 90-actualTheta2;
+            const startX=25, startY=entryY-(entryX-startX)*Math.tan(rad(angle));
+            setSvgPath('incidentRay', `M ${startX} ${startY} L ${entryX} ${entryY}`);
+            setSvgPath('insideRay', `M ${entryX} ${entryY} L ${hitX} ${hitY}`);
+            document.getElementById('hitPoint').setAttribute('cx',hitX);
+            document.getElementById('hitPoint').setAttribute('cy',hitY);
+
+            // La trayectoria reflejada o transmitida se dibuja desde el punto de incidencia.
+            if (isTIR) {
+                const reflEndX=650, reflEndY=hitY-(reflEndX-hitX)*Math.tan(rad(actualTheta2));
+                setSvgPath('reflectedRay', `M ${hitX} ${hitY} L ${reflEndX} ${Math.max(75,reflEndY)}`);
+                setSvgPath('transmittedRay','');
+            } else {
+                setSvgPath('reflectedRay','');
+                const outAngle = theta4 === null ? 0 : theta4;
+                const dx=160*Math.sin(rad(outAngle)), dy=160*Math.cos(rad(outAngle));
+                setSvgPath('transmittedRay', `M ${hitX} ${hitY} L ${hitX+dx} ${hitY+dy}`);
+            }
+
+            // Arcos: θ1/θ2 respecto a normal horizontal; θ3/θ4 respecto a normal vertical.
+            setSvgPath('angle1Arc', arcPath(entryX,entryY,48,0,angle));
+            setSvgPath('angle2Arc', arcPath(entryX,entryY,70,0,theta2deg));
+            setSvgPath('angle3Arc', arcPath(hitX,hitY,43,actualTheta2,90));
+            if (hasTransmission) setSvgPath('angle4Arc', arcPath(hitX,hitY,62,0,theta4));
+            else setSvgPath('angle4Arc','');
+
+            document.getElementById('theta1Label').setAttribute('x',entryX-52);
+            document.getElementById('theta1Label').setAttribute('y',entryY-35);
+            document.getElementById('theta2Label').setAttribute('x',entryX+55);
+            document.getElementById('theta2Label').setAttribute('y',entryY-13);
+            document.getElementById('theta3Label').setAttribute('x',hitX+12);
+            document.getElementById('theta3Label').setAttribute('y',hitY-25);
+            document.getElementById('theta4Label').setAttribute('x',hitX+65);
+            document.getElementById('theta4Label').setAttribute('y',hitY+35);
+        }
+
+        fiberIds.forEach(id => document.getElementById(id).addEventListener('input', updateFiber));
+        updateFiber();
+    
+// Actualiza automáticamente al mover cualquier control.
+['n1Range','n2Range','n3Range','angleRange','coreRange','waveRange'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', updateFiber);
+});
+updateFiber();
+</script>
+</body></html>
